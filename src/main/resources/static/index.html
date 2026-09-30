@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JEV | Triagem de Incidentes</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0b1020; --panel: #151d33; --muted: #9aa7c2; --accent: #61dafb; --green: #68d391; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at top right, #1a3150, var(--bg) 45%); color: #f7fafc; min-height: 100vh; }
+        main { width: min(1100px, calc(100% - 40px)); margin: 0 auto; padding: 56px 0; }
+        .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: .75rem; }
+        h1 { font-size: clamp(2rem, 5vw, 4rem); line-height: 1; margin: 12px 0; }
+        .subtitle { color: var(--muted); font-size: 1.1rem; margin-bottom: 32px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: rgba(21, 29, 51, .9); border: 1px solid #2c3b5e; border-radius: 18px; padding: 24px; box-shadow: 0 18px 60px rgba(0,0,0,.2); }
+        label { display: block; color: var(--muted); margin-bottom: 10px; font-size: .9rem; }
+        textarea { width: 100%; min-height: 280px; resize: vertical; border: 1px solid #3a4c73; border-radius: 12px; background: #0d1427; color: #f7fafc; padding: 16px; font: 14px/1.5 ui-monospace, SFMono-Regular, monospace; }
+        button { margin-top: 16px; border: 0; border-radius: 10px; padding: 13px 20px; background: var(--accent); color: #07111d; font-weight: 800; cursor: pointer; }
+        button:disabled { opacity: .55; cursor: wait; }
+        button.secondary { margin-top: 0; background: transparent; color: var(--accent); border: 1px solid #3a4c73; }
+        .result { min-height: 280px; display: flex; flex-direction: column; justify-content: center; }
+        .empty { color: var(--muted); text-align: center; }
+        .team { color: var(--green); font-size: 2.2rem; font-weight: 800; margin: 8px 0; }
+        .runbook { color: #dbeafe; margin-bottom: 28px; }
+        .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .metric { background: #0d1427; border-radius: 12px; padding: 16px; }
+        .metric strong { display: block; font-size: 1.4rem; margin-top: 5px; }
+        .error { color: #feb2b2; white-space: pre-wrap; }
+        .mode-switch { display: flex; gap: 8px; margin-bottom: 18px; }
+        button.mode { margin-top: 0; padding: 8px 12px; background: transparent; color: var(--muted); border: 1px solid #3a4c73; }
+        button.mode.active { background: var(--accent); color: #07111d; border-color: var(--accent); }
+        .help { color: var(--muted); font-size: .85rem; margin: 8px 0 0; }
+        .history-card { margin-top: 20px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        h2 { margin: 8px 0 20px; }
+        .summary-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .history-row { display: grid; grid-template-columns: 1.5fr .8fr .8fr 1fr 1.5fr; gap: 12px; align-items: center; padding: 14px 0; border-top: 1px solid #2c3b5e; color: #dbeafe; }
+        small { color: var(--muted); }
+        .tag { display: inline-block; background: #1f3653; color: var(--accent); border-radius: 999px; padding: 4px 8px; margin: 2px; font-size: .8rem; }
+        .history-results { grid-column: 1 / -1; display: grid; gap: 8px; margin-top: 4px; }
+        .history-result { background: #0d1427; border-radius: 10px; padding: 12px; }
+        .history-result summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+        .history-log { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #cbd5e1; font: 12px/1.5 ui-monospace, SFMono-Regular, monospace; }
+        .response-label { margin-top: 14px; color: var(--muted); font-size: .8rem; font-weight: 700; }
+        .jev-response { margin-top: 20px; background: #0d1427; border-radius: 10px; padding: 12px; }
+        .jev-response summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+        @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .summary-metrics { grid-template-columns: 1fr; } main { padding: 32px 0; } }
+        @media (max-width: 800px) { .history-row { grid-template-columns: 1fr 1fr; } .history-header { align-items: flex-start; } }
+    </style>
+</head>
+<body>
+<main>
+    <div class="eyebrow">JEV · Incident Intelligence</div>
+    <h1>Triagem inteligente de CI/CD</h1>
+    <p class="subtitle">Cole um log e veja em segundos qual time deve atuar, qual runbook usar e quanto custou a decisão.</p>
+    <section class="grid">
+        <div class="card">
+            <div class="mode-switch">
+                <button id="single-mode" class="mode active" onclick="setMode('single')">Log único</button>
+                <button id="batch-mode" class="mode" onclick="setMode('batch')">Em lote</button>
+            </div>
+            <label for="log" id="log-label">Log do incidente</label>
+            <textarea id="log" placeholder="Cole aqui o log da pipeline...">[error] helm upgrade failed for release payments-api in pre-prod
+[context] release=2024.09.0 environment=prod
+[stack] deployment exceeded progress deadline</textarea>
+            <p id="batch-help" class="help" hidden>Cole vários logs separados por uma linha em branco.</p>
+            <button id="submit" onclick="classify()">Classificar com JEV</button>
+        </div>
+        <div class="card result" id="result">
+            <div class="empty">A decisão do JEV aparecerá aqui.</div>
+        </div>
+    </section>
+    <section class="card history-card">
+        <div class="history-header">
+            <div>
+                <div class="eyebrow">Histórico</div>
+                <h2>Execuções recentes</h2>
+            </div>
+            <button class="secondary" onclick="clearHistory()">Limpar histórico</button>
+        </div>
+        <div class="summary-metrics">
+            <div class="metric"><span>Total de logs processados</span><strong id="total-logs">0</strong></div>
+            <div class="metric"><span>Custo acumulado</span><strong id="total-cost">$ 0.00000000</strong></div>
+            <div class="metric"><span>Custo acumulado em reais</span><strong id="total-cost-brl">R$ 0,00000000</strong><small id="exchange-rate">Cotação: carregando...</small></div>
+        </div>
+        <div id="history"><div class="empty">Nenhuma execução registrada.</div></div>
+    </section>
+</main>
+<script>
+    let exchangeRate = null;
+    loadHistory();
+    loadExchangeRate();
+    let mode = 'single';
+
+    function setMode(nextMode) {
+        mode = nextMode;
+        document.getElementById('single-mode').classList.toggle('active', mode === 'single');
+        document.getElementById('batch-mode').classList.toggle('active', mode === 'batch');
+        document.getElementById('log-label').textContent = mode === 'batch' ? 'Logs do incidente' : 'Log do incidente';
+        document.getElementById('batch-help').hidden = mode !== 'batch';
+        document.getElementById('submit').textContent = mode === 'batch' ? 'Classificar lote com JEV' : 'Classificar com JEV';
+    }
+
+    async function classify() {
+        const button = document.getElementById('submit');
+        const result = document.getElementById('result');
+        const input = document.getElementById('log').value.trim();
+        const logs = mode === 'batch'
+            ? input.split(/\n\s*\n/).map(log => log.trim()).filter(Boolean)
+            : [input];
+        if (!logs.length) return;
+        button.disabled = true;
+        result.innerHTML = '<div class="empty">Analisando o incidente...</div>';
+        try {
+            const response = await fetch(mode === 'batch' ? '/api/triage-batch' : '/api/triage', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(mode === 'batch' ? {logs} : {log: logs[0]})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Falha ao chamar a API.');
+            const results = mode === 'batch' ? data : [data];
+            const totalTime = results.reduce((sum, item) => sum + item.executionTimeMs, 0);
+            const totalCost = results.reduce((sum, item) => sum + Number(item.costUsd), 0);
+            result.innerHTML = `
+                <div class="eyebrow">${mode === 'batch' ? 'Lote processado' : 'Decisão do JEV'}</div>
+                <div class="team">${mode === 'batch' ? `${results.length} logs` : escapeHtml(data.time)}</div>
+                <div class="runbook">${mode === 'batch' ? 'Todas as decisões foram registradas no histórico.' : escapeHtml(data.runbook)}</div>
+                <div class="metrics">
+                    <div class="metric"><span>Tempo total</span><strong>${totalTime} ms</strong></div>
+                    <div class="metric"><span>Custo total</span><strong>$ ${totalCost.toFixed(8)}</strong></div>
+                </div>`;
+            if (mode === 'single') {
+                result.innerHTML += `
+                    <details class="jev-response">
+                        <summary>Ver resposta original do JEV</summary>
+                        <pre class="history-log">${escapeHtml(formatJson(data.rawResponse))}</pre>
+                    </details>`;
+            }
+            loadHistory();
+        } catch (error) {
+            result.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+        } finally {
+            button.disabled = false;
+        }
+    }
+    async function loadHistory() {
+        const response = await fetch('/api/history');
+        const entries = await response.json();
+        const history = document.getElementById('history');
+        const totalLogs = entries.reduce((sum, entry) => sum + entry.logCount, 0);
+        const totalCost = entries.reduce((sum, entry) => sum + Number(entry.costUsd), 0);
+        document.getElementById('total-logs').textContent = totalLogs;
+        document.getElementById('total-cost').textContent = `$ ${totalCost.toFixed(8)}`;
+        if (exchangeRate) {
+            document.getElementById('total-cost-brl').textContent = formatBrl(totalCost * exchangeRate.brlPerUsd);
+        }
+        if (!entries.length) {
+            history.innerHTML = '<div class="empty">Nenhuma execução registrada.</div>';
+            return;
+        }
+        history.innerHTML = entries.map(entry => `
+            <div class="history-row">
+                <div><strong>${entry.type === 'BATCH' ? 'Lote' : entry.type === 'ASYNC_BATCH' ? 'Lote assíncrono' : 'Log único'}</strong><br><small>${new Date(entry.executedAt).toLocaleString('pt-BR')}</small><br><small>ID: ${escapeHtml(entry.id)}</small></div>
+                <div>${entry.logCount} log(s)</div>
+                <div>${entry.executionTimeMs} ms</div>
+                <div>$ ${Number(entry.costUsd).toFixed(8)}</div>
+                <div>${entry.results.map(result => `<span class="tag">${escapeHtml(result.time)}</span>`).join('')}</div>
+                <div class="history-results">
+                    ${entry.results.map((result, index) => `
+                        <details class="history-result">
+                            <summary>Log ${index + 1} · grupo ${result.chunkNumber} · requisição JEV ${result.requestNumber} · ${escapeHtml(result.time)} · ${escapeHtml(result.runbook)}</summary>
+                            <pre class="history-log">${escapeHtml(result.log)}</pre>
+                            <div class="response-label">Resposta original do JEV</div>
+                            <details class="jev-response">
+                                <summary>Ver JSON formatado</summary>
+                                <pre class="history-log">${escapeHtml(formatJson(result.rawResponse))}</pre>
+                            </details>
+                        </details>`).join('')}
+                </div>
+            </div>`).join('');
+    }
+    async function clearHistory() {
+        await fetch('/api/history', {method: 'DELETE'});
+        loadHistory();
+    }
+    async function loadExchangeRate() {
+        try {
+            const response = await fetch('/api/exchange-rate');
+            if (!response.ok) throw new Error('Falha ao consultar cotação');
+            exchangeRate = await response.json();
+            document.getElementById('exchange-rate').textContent =
+                exchangeRate.fallback
+                    ? `Cotação fixa de fallback: 1 USD = ${formatBrl(exchangeRate.brlPerUsd)}`
+                    : `Cotação: 1 USD = ${formatBrl(exchangeRate.brlPerUsd)} (${exchangeRate.date})`;
+            loadHistory();
+        } catch (error) {
+            document.getElementById('exchange-rate').textContent = 'Cotação indisponível';
+        }
+    }
+    function formatBrl(value) {
+        return Number(value).toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            minimumFractionDigits: 8,
+            maximumFractionDigits: 8
+        });
+    }
+    function formatJson(value) {
+        try {
+            return JSON.stringify(JSON.parse(value), null, 2);
+        } catch {
+            return value;
+        }
+    }
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+    }
+</script>
+</body>
+</html>

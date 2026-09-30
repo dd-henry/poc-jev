@@ -1,0 +1,27 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DATABASE_URL:}
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: always
+
+openrouter:
+  api-url: https://openrouter.ai/api/alpha/decisions
+  api-key: ${OPENROUTER_API_KEY:}
+  model: typesafe/jev-1.13
+
+springdoc:
+  swagger-ui:
+    path: /swagger
+  api-docs:
+    path: /v3/api-docs
+
+exchange-rate:
+  fallback-usd-to-brl: 5.20
+
+processing:
+  logs-per-request: 2
+  max-concurrency: 5
