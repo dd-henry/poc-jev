@@ -23,12 +23,15 @@
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         .project { display: flex; min-height: 320px; flex-direction: column; padding: 24px; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(145deg, rgba(20, 29, 43, .95), rgba(13, 18, 28, .95)); transition: transform .2s, border-color .2s; }
         .project:hover { transform: translateY(-4px); border-color: var(--accent); }
-        .project-icon { display: block; width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--line); border-radius: 14px; }
+        .project-icon { display: grid; width: 48px; height: 48px; place-items: center; object-fit: cover; border: 1px solid var(--line); border-radius: 14px; color: var(--text); font-weight: 800; }
         .project h3 { margin: 28px 0 10px; font-size: 1.3rem; }
         .project p { margin: 0; color: var(--muted); line-height: 1.55; }
+        .project-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 18px; color: var(--muted); font-size: .8rem; }
+        .project-meta strong { color: var(--text); font-weight: 600; }
         .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px; }
         .tag { padding: 5px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--blue); font-size: .75rem; }
-        .project-link { margin-top: auto; padding-top: 28px; color: var(--accent); font-weight: 700; text-decoration: none; }
+        .project-links { display: flex; flex-wrap: wrap; gap: 18px; margin-top: auto; padding-top: 28px; }
+        .project-link { color: var(--accent); font-weight: 700; text-decoration: none; }
         .project-link:hover { text-decoration: underline; }
         footer { display: flex; justify-content: space-between; gap: 20px; margin-top: 120px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
         footer a { color: var(--muted); }
@@ -44,20 +47,34 @@
     <header>
         <div class="eyebrow">Portfólio · laboratório de ideias da madrugada</div>
         <h1>Tive uma ideia aí...</h1>
-        <p class="intro">Um laboratório de ideias, projetos e experimentos construídos para transformar curiosidade em algo real..</p>
+        <p class="intro">Um laboratório de ideias, projetos e experimentos construídos para transformar curiosidade em algo real.</p>
     </header>
     <section>
         <div class="section-heading">
             <h2>Projetos</h2>
-            <span class="count">01 pensamento intrusivo publicado</span>
+            <span class="count">01 publicado · 01 em construção</span>
         </div>
         <div class="grid">
             <article class="project">
                 <img class="project-icon" src="/jev.webp" alt="Logo do JEV">
                 <h3>JEV Incident Intelligence</h3>
                 <p>Triagem inteligente de incidentes de CI/CD usando IA para identificar o time responsável e o runbook ideal a partir de logs.</p>
+                <div class="project-meta"><span>Status: <strong>Online</strong></span></div>
                 <div class="tags"><span class="tag">Spring Boot</span><span class="tag">IA</span><span class="tag">Jev AI</span><span class="tag">CI/CD</span></div>
-                <a class="project-link" href="/jev">Explorar projeto →</a>
+                <div class="project-links">
+                    <a class="project-link" href="/jev">Abrir projeto →</a>
+                    <a class="project-link" href="/jev/docs">Doc →</a>
+                </div>
+            </article>
+            <article class="project">
+                <div class="project-icon" aria-hidden="true">?</div>
+                <h3>Próxima ideia</h3>
+                <p>Um novo projeto está tomando forma. Em breve, mais uma ideia vai sair do papel e ganhar um espaço por aqui.</p>
+                <div class="project-meta"><span>Status: <strong>Em construção</strong></span></div>
+                <div class="tags"><span class="tag">Em breve</span><span class="tag">Experimento</span></div>
+                <div class="project-links">
+                    <span class="project-link">Em breve →</span>
+                </div>
             </article>
         </div>
     </section>
