@@ -23,7 +23,7 @@
         .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         .project { display: flex; min-height: 320px; flex-direction: column; padding: 24px; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(145deg, rgba(20, 29, 43, .95), rgba(13, 18, 28, .95)); transition: transform .2s, border-color .2s; }
         .project:hover { transform: translateY(-4px); border-color: var(--accent); }
-        .project-icon { display: grid; width: 48px; height: 48px; place-items: center; border-radius: 14px; color: #071112; background: var(--accent); font-weight: 900; font-size: 1.3rem; }
+        .project-icon { display: block; width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--line); border-radius: 14px; }
         .project h3 { margin: 28px 0 10px; font-size: 1.3rem; }
         .project p { margin: 0; color: var(--muted); line-height: 1.55; }
         .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px; }
@@ -49,11 +49,11 @@
     <section>
         <div class="section-heading">
             <h2>Projetos</h2>
-            <span class="count">01 ideia publicada</span>
+            <span class="count">01 pensamento intrusivo publicado</span>
         </div>
         <div class="grid">
             <article class="project">
-                <div class="project-icon">J</div>
+                <img class="project-icon" src="/jev.webp" alt="Logo do JEV">
                 <h3>JEV Incident Intelligence</h3>
                 <p>Triagem inteligente de incidentes de CI/CD usando IA para identificar o time responsável e o runbook ideal a partir de logs.</p>
                 <div class="tags"><span class="tag">Spring Boot</span><span class="tag">IA</span><span class="tag">Jev AI</span><span class="tag">CI/CD</span></div>
