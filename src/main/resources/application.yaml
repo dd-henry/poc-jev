@@ -13,6 +13,9 @@ openrouter:
   api-key: ${OPENROUTER_API_KEY:}
   model: typesafe/jev-1.13
 
+jev:
+  access-password: ${JEV_ACCESS_PASSWORD:}
+
 springdoc:
   swagger-ui:
     path: /swagger
