@@ -1,0 +1,11 @@
+.git
+.idea
+.mvn
+target
+data
+.env
+*.iml
+*.log
+README.md
+generate_logs.py
+send_logs_to_jev.py

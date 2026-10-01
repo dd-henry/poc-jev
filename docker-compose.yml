@@ -1,0 +1,38 @@
+services:
+  poc-jev:
+    build: .
+    restart: unless-stopped
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+    expose:
+      - "8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.poc-jev.loadbalancer.server.port=8080"
+
+      # HTTPS route for the domain configured in DOMAIN.
+      - "traefik.http.routers.poc-jev-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.poc-jev-secure.entrypoints=websecure"
+      - "traefik.http.routers.poc-jev-secure.tls=true"
+      - "traefik.http.routers.poc-jev-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.poc-jev-secure.service=poc-jev"
+      - "traefik.http.routers.poc-jev-secure.middlewares=poc-jev-cors"
+
+      # HTTP route redirected to HTTPS by Dokploy's shared middleware.
+      - "traefik.http.routers.poc-jev-web.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.poc-jev-web.entrypoints=web"
+      - "traefik.http.routers.poc-jev-web.middlewares=redirect-to-https@file"
+      - "traefik.http.routers.poc-jev-web.service=poc-jev"
+
+      # The dashboard and API are served from the same origin.
+      - "traefik.http.middlewares.poc-jev-cors.headers.accessControlAllowMethods=GET,POST,PUT,DELETE,OPTIONS"
+      - "traefik.http.middlewares.poc-jev-cors.headers.accessControlAllowOriginList=*"
+      - "traefik.http.middlewares.poc-jev-cors.headers.accessControlAllowHeaders=*"
+      - "traefik.http.middlewares.poc-jev-cors.headers.accessControlMaxAge=86400"
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
