@@ -62,6 +62,7 @@
         <div id="history"></div>
     </section>
 </main>
+<script src="/action-auth.js"></script>
 <script>
     document.getElementById('date').value = new Date().toLocaleDateString('en-CA');
     let executionCode;
@@ -77,7 +78,7 @@
         status.textContent = 'Gerando o roteiro...';
         try {
             const params = new URLSearchParams({username: document.getElementById('username').value, date: document.getElementById('date').value});
-            const response = await fetch('/api/newsletter/script?' + params, {method: 'POST'});
+            const response = await fetchWithActionAuthentication('/api/newsletter/script?' + params, {method: 'POST'});
             const data = await response.json();
             if (!response.ok) {
                 throw new Error(data.message || data.detail || `Falha ao gerar o roteiro (${response.status}).`);
