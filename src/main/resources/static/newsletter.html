@@ -22,7 +22,6 @@
         button:disabled { opacity: .55; cursor: wait; }
         textarea { width: 100%; min-height: 420px; resize: vertical; border: 1px solid #3a4c73; border-radius: 12px; background: #0d1427; color: #f7fafc; padding: 16px; font: 15px/1.6 system-ui, sans-serif; }
         .status { margin: 12px 0; color: var(--green); }
-        audio { width: 100%; margin-top: 16px; }
         .error { color: #feb2b2; white-space: pre-wrap; }
         .history { margin-top: 20px; }
         .generation { border-top: 1px solid #2c3b5e; padding: 18px 0; }
@@ -30,7 +29,16 @@
         .generation-header { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
         .generation-title { font-weight: 700; }
         .generation-meta { color: var(--muted); font-size: .9rem; }
-        .generation audio { margin-top: 10px; }
+        .audio-player { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 14px; align-items: center; margin-top: 16px; padding: 14px 16px; border: 1px solid #344768; border-radius: 16px; background: linear-gradient(135deg, #1c2a47, #111a2e); }
+        .play-button { display: grid; width: 46px; height: 46px; margin: 0; padding: 0; place-items: center; border: 0; border-radius: 50%; background: var(--accent); color: #07111d; font-size: 1rem; box-shadow: 0 4px 18px rgba(97, 218, 251, .22); cursor: pointer; }
+        .play-button:hover { filter: brightness(1.1); }
+        .player-content { min-width: 0; }
+        .player-timeline { display: flex; align-items: center; gap: 10px; }
+        .player-time { min-width: 38px; color: #d9e5fa; font-size: .78rem; font-variant-numeric: tabular-nums; text-align: center; }
+        .seek-bar { width: 100%; height: 5px; margin: 0; padding: 0; border: 0; border-radius: 99px; appearance: none; background: linear-gradient(to right, var(--accent) 0%, var(--accent) 0%, #42516e 0%, #42516e 100%); cursor: pointer; }
+        .seek-bar::-webkit-slider-thumb { width: 13px; height: 13px; border: 2px solid #dff9ff; border-radius: 50%; appearance: none; background: var(--accent); box-shadow: 0 0 0 3px rgba(97, 218, 251, .15); }
+        .seek-bar::-moz-range-thumb { width: 10px; height: 10px; border: 2px solid #dff9ff; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(97, 218, 251, .15); }
+        .player-error { grid-column: 2; margin: 0; color: #feb2b2; font-size: .82rem; }
         .download-link { display: inline-block; margin-top: 8px; color: var(--accent); }
         @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } main { padding: 28px 0; } }
     </style>
@@ -52,7 +60,7 @@
         <div class="card">
             <h2>Texto falado</h2>
             <textarea id="script" placeholder="O roteiro aparecerá aqui assim que o OpenRouter responder." readonly></textarea>
-            <audio id="audio" controls hidden></audio>
+            <div id="audio-player" hidden></div>
             <a id="download" hidden download="newsletter.wav" style="display:inline-block;margin-top:12px;color:var(--accent);">Baixar áudio</a>
         </div>
     </section>
@@ -72,9 +80,8 @@
         const button = document.getElementById('generate');
         const status = document.getElementById('status');
         const script = document.getElementById('script');
-        const audio = document.getElementById('audio');
         const download = document.getElementById('download');
-        button.disabled = true; audio.hidden = true; download.hidden = true; script.value = '';
+        button.disabled = true; document.getElementById('audio-player').hidden = true; download.hidden = true; script.value = '';
         status.textContent = 'Gerando o roteiro...';
         try {
             const params = new URLSearchParams({username: document.getElementById('username').value, date: document.getElementById('date').value});
@@ -99,8 +106,9 @@
         const data = await response.json();
         if (data.status === 'COMPLETED') {
             const audioUrl = '/api/newsletter/script/' + executionCode + '/audio';
-            document.getElementById('audio').src = audioUrl;
-            document.getElementById('audio').hidden = false;
+            const audioPlayer = document.getElementById('audio-player');
+            audioPlayer.replaceChildren(createAudioPlayer(audioUrl));
+            audioPlayer.hidden = false;
             const download = document.getElementById('download');
             download.href = audioUrl + '?download=true'; download.hidden = false;
             status.textContent = 'Áudio pronto.';
@@ -140,9 +148,9 @@
                         <span class="generation-meta">${escapeHtml(generation.date)} · ${formatDate(generation.createdAt)}</span>
                     </div>
                     <div class="generation-meta">Código: ${escapeHtml(generation.executionCode)}</div>
-                    <audio controls preload="none" src="${audioUrl}"></audio>
                     <a class="download-link" href="${audioUrl}?download=true">Baixar áudio</a>
                 `;
+                item.insertBefore(createAudioPlayer(audioUrl), item.lastElementChild);
                 history.appendChild(item);
             });
         } catch (error) {
@@ -151,6 +159,98 @@
     }
     function formatDate(value) {
         return new Date(value).toLocaleString('pt-BR');
+    }
+    function createAudioPlayer(source) {
+        const player = document.createElement('div');
+        player.className = 'audio-player';
+
+        const audio = document.createElement('audio');
+        audio.preload = 'metadata';
+        audio.src = source;
+
+        const playButton = document.createElement('button');
+        playButton.className = 'play-button';
+        playButton.type = 'button';
+        playButton.textContent = '▶';
+        playButton.setAttribute('aria-label', 'Reproduzir áudio');
+
+        const content = document.createElement('div');
+        content.className = 'player-content';
+        const timeline = document.createElement('div');
+        timeline.className = 'player-timeline';
+
+        const currentTime = document.createElement('span');
+        currentTime.className = 'player-time';
+        currentTime.textContent = '0:00';
+
+        const seekBar = document.createElement('input');
+        seekBar.className = 'seek-bar';
+        seekBar.type = 'range';
+        seekBar.min = '0';
+        seekBar.max = '100';
+        seekBar.value = '0';
+        seekBar.setAttribute('aria-label', 'Posição do áudio');
+
+        const duration = document.createElement('span');
+        duration.className = 'player-time';
+        duration.textContent = '0:00';
+
+        const error = document.createElement('p');
+        error.className = 'player-error';
+        error.hidden = true;
+
+        timeline.append(currentTime, seekBar, duration);
+        content.append(timeline);
+        player.append(audio, playButton, content, error);
+
+        playButton.addEventListener('click', async () => {
+            if (audio.paused) {
+                document.querySelectorAll('.audio-player audio').forEach(otherAudio => {
+                    if (otherAudio !== audio) otherAudio.pause();
+                });
+                try {
+                    await audio.play();
+                } catch {
+                    error.textContent = 'Não foi possível reproduzir este áudio.';
+                    error.hidden = false;
+                }
+            } else {
+                audio.pause();
+            }
+        });
+        audio.addEventListener('play', () => {
+            playButton.textContent = '❚❚';
+            playButton.setAttribute('aria-label', 'Pausar áudio');
+            error.hidden = true;
+        });
+        audio.addEventListener('pause', () => {
+            playButton.textContent = '▶';
+            playButton.setAttribute('aria-label', 'Reproduzir áudio');
+        });
+        audio.addEventListener('loadedmetadata', () => {
+            duration.textContent = formatAudioTime(audio.duration);
+        });
+        audio.addEventListener('timeupdate', () => {
+            currentTime.textContent = formatAudioTime(audio.currentTime);
+            const progress = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+            seekBar.value = String(progress);
+            seekBar.style.background = `linear-gradient(to right, var(--accent) ${progress}%, #42516e ${progress}%)`;
+        });
+        audio.addEventListener('error', () => {
+            error.textContent = 'Falha ao carregar o áudio.';
+            error.hidden = false;
+        });
+        seekBar.addEventListener('input', () => {
+            if (audio.duration) audio.currentTime = (Number(seekBar.value) / 100) * audio.duration;
+        });
+
+        return player;
+    }
+    function formatAudioTime(seconds) {
+        if (!Number.isFinite(seconds)) return '0:00';
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.floor(seconds % 60).toString().padStart(2, '0');
+        return `${minutes}:${remainingSeconds}`;
     }
     function escapeHtml(value) {
         return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
