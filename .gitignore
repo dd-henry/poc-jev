@@ -1,5 +1,8 @@
 target/
 .env
+**/.venv/
+**/__pycache__/
+data/newsletter-audio/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

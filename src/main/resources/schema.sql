@@ -31,3 +31,18 @@ create index if not exists idx_triagem_execution_executed_at
 
 create index if not exists idx_triagem_result_execution_id
     on triagem_result (execution_id);
+
+create table if not exists newsletter_generation (
+    execution_code varchar(36) primary key,
+    username varchar(100) not null,
+    requested_date date not null,
+    script text not null,
+    status varchar(20) not null,
+    audio_path text,
+    error text,
+    created_at timestamptz not null,
+    updated_at timestamptz not null
+);
+
+create index if not exists idx_newsletter_generation_created_at
+    on newsletter_generation (created_at desc);

@@ -15,4 +15,9 @@ public class PortfolioController {
     public String jevDocumentation() {
         return "forward:/jev-docs.html";
     }
+
+    @GetMapping({"/newsletter", "/newsletter/"})
+    public String newsletter() {
+        return "forward:/newsletter.html";
+    }
 }

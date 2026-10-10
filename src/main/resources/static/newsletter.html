@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Newsletter de tecnologia</title>
+    <style>
+        :root { color-scheme: dark; --bg: #0b1020; --panel: #151d33; --muted: #9aa7c2; --accent: #61dafb; --green: #68d391; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at top right, #1a3150, var(--bg) 45%); color: #f7fafc; min-height: 100vh; }
+        main { width: min(1100px, calc(100% - 40px)); margin: 0 auto; padding: 40px 0; }
+        .header { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+        .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: .75rem; }
+        h1 { font-size: clamp(2rem, 5vw, 4rem); line-height: 1; margin: 12px 0; }
+        h2 { margin-top: 0; }
+        .subtitle, label, small { color: var(--muted); }
+        .grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+        .card { background: rgba(21, 29, 51, .9); border: 1px solid #2c3b5e; border-radius: 18px; padding: 24px; box-shadow: 0 18px 60px rgba(0,0,0,.2); }
+        label { display: block; margin: 16px 0 8px; font-size: .9rem; }
+        input, select, button { width: 100%; border: 1px solid #3a4c73; border-radius: 10px; padding: 12px; background: #0d1427; color: #f7fafc; }
+        button { margin-top: 20px; background: var(--accent); color: #07111d; font-weight: 800; cursor: pointer; }
+        button:disabled { opacity: .55; cursor: wait; }
+        textarea { width: 100%; min-height: 420px; resize: vertical; border: 1px solid #3a4c73; border-radius: 12px; background: #0d1427; color: #f7fafc; padding: 16px; font: 15px/1.6 system-ui, sans-serif; }
+        .status { margin: 12px 0; color: var(--green); }
+        audio { width: 100%; margin-top: 16px; }
+        .error { color: #feb2b2; white-space: pre-wrap; }
+        .history { margin-top: 20px; }
+        .generation { border-top: 1px solid #2c3b5e; padding: 18px 0; }
+        .generation:first-child { border-top: 0; }
+        .generation-header { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .generation-title { font-weight: 700; }
+        .generation-meta { color: var(--muted); font-size: .9rem; }
+        .generation audio { margin-top: 10px; }
+        .download-link { display: inline-block; margin-top: 8px; color: var(--accent); }
+        @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } main { padding: 28px 0; } }
+    </style>
+</head>
+<body>
+<main>
+    <div class="header"><div class="eyebrow">Newsletter · AI</div><a href="/jev" style="color: var(--accent);">← Projetos</a></div>
+    <h1>Newsletter de tecnologia</h1>
+    <p class="subtitle">Busque as notícias do TabNews, gere as falas e acompanhe o áudio sem bloquear a tela.</p>
+    <section class="grid">
+        <div class="card">
+            <label for="username">Usuário do TabNews</label>
+            <input id="username" value="NewsletterOficial">
+            <label for="date">Data</label>
+            <input id="date" type="date">
+            <button id="generate" onclick="generate()">Gerar roteiro e áudio</button>
+            <div id="status" class="status"></div>
+        </div>
+        <div class="card">
+            <h2>Texto falado</h2>
+            <textarea id="script" placeholder="O roteiro aparecerá aqui assim que o OpenRouter responder." readonly></textarea>
+            <audio id="audio" controls hidden></audio>
+            <a id="download" hidden download="newsletter.wav" style="display:inline-block;margin-top:12px;color:var(--accent);">Baixar áudio</a>
+        </div>
+    </section>
+    <section class="card history">
+        <h2>Áudios gerados</h2>
+        <p id="history-status" class="subtitle">Carregando histórico...</p>
+        <div id="history"></div>
+    </section>
+</main>
+<script>
+    document.getElementById('date').value = new Date().toLocaleDateString('en-CA');
+    let executionCode;
+    let processingStartedAt;
+    loadHistory();
+    async function generate() {
+        const button = document.getElementById('generate');
+        const status = document.getElementById('status');
+        const script = document.getElementById('script');
+        const audio = document.getElementById('audio');
+        const download = document.getElementById('download');
+        button.disabled = true; audio.hidden = true; download.hidden = true; script.value = '';
+        status.textContent = 'Gerando o roteiro...';
+        try {
+            const params = new URLSearchParams({username: document.getElementById('username').value, date: document.getElementById('date').value});
+            const response = await fetch('/api/newsletter/script?' + params, {method: 'POST'});
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || data.detail || `Falha ao gerar o roteiro (${response.status}).`);
+            }
+            executionCode = data.executionCode;
+            processingStartedAt = Date.now();
+            script.value = data.script;
+            status.textContent = `Roteiro pronto. Código: ${executionCode}. Gerando áudio...`;
+            poll();
+        } catch (error) {
+            status.innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`;
+            button.disabled = false;
+        }
+    }
+    async function poll() {
+        const status = document.getElementById('status');
+        const response = await fetch('/api/newsletter/script/' + executionCode);
+        const data = await response.json();
+        if (data.status === 'COMPLETED') {
+            const audioUrl = '/api/newsletter/script/' + executionCode + '/audio';
+            document.getElementById('audio').src = audioUrl;
+            document.getElementById('audio').hidden = false;
+            const download = document.getElementById('download');
+            download.href = audioUrl + '?download=true'; download.hidden = false;
+            status.textContent = 'Áudio pronto.';
+            document.getElementById('generate').disabled = false;
+            loadHistory();
+        } else if (data.status === 'FAILED') {
+            status.innerHTML = `<span class="error">${escapeHtml(data.error || 'Falha ao gerar o áudio.')}</span>`;
+            document.getElementById('generate').disabled = false;
+        } else {
+            const elapsed = Math.floor((Date.now() - processingStartedAt) / 1000);
+            status.textContent = `Gerando áudio no OmniVoice... ${elapsed}s decorridos. Código: ${executionCode}`;
+            setTimeout(poll, 3000);
+        }
+    }
+    async function loadHistory() {
+        const history = document.getElementById('history');
+        const historyStatus = document.getElementById('history-status');
+        try {
+            const response = await fetch('/api/newsletter/generations?limit=50');
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || `Falha ao carregar histórico (${response.status}).`);
+            }
+            history.innerHTML = '';
+            if (data.length === 0) {
+                historyStatus.textContent = 'Nenhum áudio gerado ainda.';
+                return;
+            }
+            historyStatus.textContent = `${data.length} áudio(s) disponível(is).`;
+            data.forEach(generation => {
+                const audioUrl = '/api/newsletter/script/' + encodeURIComponent(generation.executionCode) + '/audio';
+                const item = document.createElement('article');
+                item.className = 'generation';
+                item.innerHTML = `
+                    <div class="generation-header">
+                        <span class="generation-title">${escapeHtml(generation.username)}</span>
+                        <span class="generation-meta">${escapeHtml(generation.date)} · ${formatDate(generation.createdAt)}</span>
+                    </div>
+                    <div class="generation-meta">Código: ${escapeHtml(generation.executionCode)}</div>
+                    <audio controls preload="none" src="${audioUrl}"></audio>
+                    <a class="download-link" href="${audioUrl}?download=true">Baixar áudio</a>
+                `;
+                history.appendChild(item);
+            });
+        } catch (error) {
+            historyStatus.innerHTML = `<span class="error">${escapeHtml(error.message)}</span>`;
+        }
+    }
+    function formatDate(value) {
+        return new Date(value).toLocaleString('pt-BR');
+    }
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+    }
+</script>
+</body>
+</html>

@@ -5,6 +5,11 @@ services:
     environment:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       DATABASE_URL: ${DATABASE_URL}
+      OMNIVOICE_URL: ${OMNIVOICE_URL:-http://host.docker.internal:8001}
+      OMNIVOICE_API_KEY: ${OMNIVOICE_API_KEY}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-newsletter-audio}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
     expose:
       - "8080"
     labels:
