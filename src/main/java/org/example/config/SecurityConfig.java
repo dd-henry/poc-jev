@@ -21,7 +21,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/jev", true)
+                        .defaultSuccessUrl("/#projetos", true)
                         .permitAll())
                 .logout(logout -> logout
                         .logoutSuccessUrl("/")
