@@ -77,8 +77,11 @@ public class NewsletterScriptService {
         return """
                 Você escreve falas para um apresentador brasileiro de notícias de tecnologia.
                 Gere somente o texto que será falado em voz alta, em português brasileiro.
-                O texto deve soar natural, espontâneo e descontraído, como um react de tecnologia:
-                use comentários rápidos, humor leve, opiniões claramente identificadas e transições
+                O texto deve soar natural, espontâneo e descontraído, como um react de tecnologia.
+                Inclua uma ou duas piadas leves e pertinentes às notícias, sem forçar humor em
+                assuntos delicados. Acrescente também uma ou duas opiniões curtas, deixando claro
+                que são opinião com expressões naturais como "na minha opinião" ou "o que eu acho
+                interessante é". Conecte os comentários aos fatos apresentados e use transições
                 naturais entre as notícias.
                 Não escreva título, cabeçalhos, tópicos, indicações de cena, instruções de edição,
                 rubricas, efeitos sonoros, emojis ou qualquer texto entre colchetes e parênteses.
